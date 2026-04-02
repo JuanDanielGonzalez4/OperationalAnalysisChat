@@ -1,13 +1,19 @@
+import asyncio
 import logging
 import uuid
-import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
 from src.agent.graph import ChatGraph
-from src.api.dependencies import get_chat_graph, get_session_store
+from src.api.dependencies import (
+    get_cached_insights,
+    get_chat_graph,
+    get_dataframes,
+    get_session_store,
+    set_cached_insights,
+)
 from src.services.session_store import SessionStore
 
 logger = logging.getLogger(__name__)
@@ -108,44 +114,62 @@ async def list_sessions(
     return [SessionOut(**s) for s in sessions]
 
 
-class InsightsResponse(BaseModel):
-    content: str
+class ChartData(BaseModel):
+    anomalies: list[dict]
+    trends: list[dict]
+    benchmarks: list[dict]
+    correlations: list[dict]
 
 
-@router.get("/insights", response_model=InsightsResponse)
-def get_insights():
-    """Retorna el contenido del archivo de insights si existe."""
-    filepath = "data/insights.md"
-    if not os.path.exists(filepath):
-        return InsightsResponse(content="# Insights\n\nNo hay insights generados. Haz clic en 'Generar Insights'.")
-    
-    with open(filepath, mode="r", encoding="utf-8") as f:
-        content = f.read()
-        return InsightsResponse(content=content)
+class InsightsReportResponse(BaseModel):
+    report_md: str
+    chart_data: ChartData
 
 
-@router.post("/insights/generate", response_model=InsightsResponse)
-async def generate_insights(
-    chat_graph: ChatGraph = Depends(get_chat_graph),
-    session_store: SessionStore = Depends(get_session_store),
-):
-    """Genera nuevos insights usando el agente y los guarda en insights.md"""
-    session_id = "insights_generation_session"
-    prompt = "Genera un reporte DETALLADO de insights operativos, estrategias de precios y recomendaciones para Rappi basado en los datos actuales. Formatea el resultado en Markdown profesional con títulos, listas, y texto en negrita. Analiza profundamente el performance y da recomendaciones accionables."
-    
-    await session_store.get_or_create(session_id, "Generación de Insights")
-    
-    result = await chat_graph.graph.ainvoke(
-        {"messages": [HumanMessage(content=prompt)]},
-        config={"configurable": {"thread_id": session_id}},
+MAX_CHART_ITEMS = 15
+
+
+def _build_chart_data(findings: dict) -> ChartData:
+    """Extract top findings per category for frontend charts."""
+    return ChartData(
+        anomalies=findings["anomalies"][:MAX_CHART_ITEMS],
+        trends=findings["trends"][:MAX_CHART_ITEMS],
+        benchmarks=findings["benchmarks"][:MAX_CHART_ITEMS],
+        correlations=findings["correlations"][:MAX_CHART_ITEMS],
     )
-    
-    final_message = result["messages"][-1].content
-    
-    filepath = "data/insights.md"
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, mode="w", encoding="utf-8") as f:
-        f.write(final_message)
-        
-    return InsightsResponse(content=final_message)
+
+
+@router.get("/insights", response_model=InsightsReportResponse)
+def get_insights():
+    """Retorna el último reporte de insights cacheado."""
+    cached = get_cached_insights()
+    if cached is None:
+        return InsightsReportResponse(
+            report_md="# Insights\n\nNo hay insights generados. Haz clic en **Generar Insights**.",
+            chart_data=ChartData(anomalies=[], trends=[], benchmarks=[], correlations=[]),
+        )
+    return InsightsReportResponse(**cached)
+
+
+@router.post("/insights/generate", response_model=InsightsReportResponse)
+async def generate_insights():
+    """Ejecuta detectores determinísticos + narración LLM y cachea el resultado."""
+    from src.services.insights_engine import run_all_detectors
+    from src.services.insights_narration import generate_narrative
+
+    df_metrics, df_orders = get_dataframes()
+
+    # Run CPU-bound detectors in a thread to avoid blocking the event loop
+    loop = asyncio.get_running_loop()
+    findings = await loop.run_in_executor(None, run_all_detectors, df_metrics, df_orders)
+
+    # LLM narration (async)
+    report_md = await generate_narrative(findings)
+
+    chart_data = _build_chart_data(findings)
+
+    result = {"report_md": report_md, "chart_data": chart_data.model_dump()}
+    set_cached_insights(result)
+
+    return InsightsReportResponse(report_md=report_md, chart_data=chart_data)
 

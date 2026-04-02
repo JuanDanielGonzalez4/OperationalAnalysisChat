@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- No external markdown library needed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* CSS resets and variables */
         :root {
-            --rappi-red: #FF4940;
+            --rappi-red: #FF2940;
             --rappi-red-glow: rgba(255, 73, 64, 0.4);
             --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             --glass-bg: rgba(255, 255, 255, 0.7);
@@ -20,6 +22,7 @@
             --text-muted: #718096;
             --font-main: 'Outfit', sans-serif;
         }
+
         body {
             margin: 0;
             padding: 0;
@@ -59,7 +62,8 @@
             backdrop-filter: blur(10px);
             transition: all 0.2s ease;
             position: relative;
-            transform: translateY(1px); /* Overlaps container border slightly */
+            transform: translateY(1px);
+            /* Overlaps container border slightly */
         }
 
         .browser-tab:hover {
@@ -70,23 +74,28 @@
         .browser-tab.active {
             background: var(--glass-bg);
             color: var(--rappi-red);
-            padding-top: 16px; /* Pops out slightly */
+            padding-top: 16px;
+            /* Pops out slightly */
             margin-top: -2px;
-            border-bottom: 2px solid var(--glass-bg); /* Cover the border below */
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.02);
+            border-bottom: 2px solid var(--glass-bg);
+            /* Cover the border below */
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.02);
             z-index: 11;
         }
 
         /* Glass Container View */
         .app-container {
             width: 95vw;
-            height: 90vh; /* Remaining height */
-            display: none; /* Hidden by default for logic */
+            height: 90vh;
+            /* Remaining height */
+            display: none;
+            /* Hidden by default for logic */
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
-            border-top-left-radius: 4px; /* Hard corner near first tab */
+            border-top-left-radius: 4px;
+            /* Hard corner near first tab */
             border: 1px solid var(--glass-border);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             overflow: hidden;
@@ -111,7 +120,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .brand {
@@ -132,6 +141,7 @@
             overflow: hidden;
             display: flex;
         }
+
         .brand-icon img {
             width: 100%;
             height: 100%;
@@ -140,7 +150,7 @@
 
         .new-chat-btn {
             padding: 10px 16px;
-            background: rgba(255,255,255,0.6);
+            background: rgba(255, 255, 255, 0.6);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             font-family: var(--font-main);
@@ -183,15 +193,15 @@
         }
 
         .session-item:hover {
-            background: rgba(255,255,255,0.7);
-            border-color: rgba(255,255,255,0.9);
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(255, 255, 255, 0.9);
             transform: translateY(-1px);
         }
 
         .session-item.active {
             background: white;
             border-color: rgba(255, 73, 64, 0.2);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             border-left: 3px solid var(--rappi-red);
         }
 
@@ -214,7 +224,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .messages-container {
@@ -228,17 +238,27 @@
 
         .message {
             max-width: 75%;
+            min-width: 0;
             padding: 16px 20px;
             border-radius: 20px;
-            line-height: 1.5;
+            line-height: 1.6;
             font-size: 0.95rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             animation: messageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             position: relative;
         }
 
         @keyframes messageFadeIn {
-            0% { opacity: 0; transform: translateY(10px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.user {
@@ -255,7 +275,107 @@
             color: var(--text-main);
             border-bottom-left-radius: 4px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(255,255,255,0.6);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 85%;
+        }
+
+        .message.assistant * {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .message.assistant pre,
+        .message.assistant code {
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: #f7fafc;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .message.assistant pre {
+            padding: 12px;
+            display: block;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+
+
+        .message.assistant h1,
+        .message.assistant h2,
+        .message.assistant h3 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: var(--rappi-red);
+        }
+
+        .message.assistant h1 {
+            font-size: 1.4rem;
+        }
+
+        .message.assistant h2 {
+            font-size: 1.2rem;
+        }
+
+        .message.assistant h3 {
+            font-size: 1.05rem;
+        }
+
+        .message.assistant p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .message.assistant ul,
+        .message.assistant ol {
+            margin: 8px 0;
+            padding-left: 20px;
+            list-style-position: inside;
+        }
+
+        .message.assistant li {
+            margin-bottom: 4px;
+        }
+
+        .message.assistant table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .message.assistant p:first-child {
+            margin-top: 0;
+        }
+
+        .message.assistant p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message.assistant table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+            font-size: 0.85rem;
+        }
+
+        .message.assistant th,
+        .message.assistant td {
+            padding: 6px 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .message.assistant th {
+            background: rgba(255, 41, 64, 0.06);
+            font-weight: 600;
         }
 
         .input-area {
@@ -271,11 +391,11 @@
             padding: 8px 12px;
             border-radius: 24px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             align-items: center;
             transition: all 0.3s ease;
         }
-        
+
         .input-container:focus-within {
             box-shadow: 0 8px 24px rgba(255, 73, 64, 0.15);
             border-color: rgba(255, 73, 64, 0.3);
@@ -347,25 +467,41 @@
             animation: bounce 1.4s infinite ease-in-out both;
         }
 
-        .dot:nth-child(1) { animation-delay: -0.32s; }
-        .dot:nth-child(2) { animation-delay: -0.16s; }
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
 
         @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
         }
 
         /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 6px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: rgba(0, 0, 0, 0.1);
             border-radius: 10px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 0, 0, 0.2);
         }
@@ -380,26 +516,27 @@
             opacity: 0.8;
             animation: messageFadeIn 0.5s ease;
         }
+
         .empty-state img {
             width: 80px;
             height: 80px;
             margin-bottom: 16px;
             border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         }
 
         /* Insights Panel Styles */
         #insightsView {
             flex-direction: column;
-            background: rgba(255,255,255,0.75); 
+            background: rgba(255, 255, 255, 0.75);
         }
 
         .insights-actions {
             padding: 16px 32px;
             display: flex;
             justify-content: flex-end;
-            background: rgba(255,255,255,0.4);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             align-items: center;
         }
 
@@ -443,12 +580,17 @@
             flex: 1;
             padding: 32px 10%;
             overflow-y: auto;
+            overflow-x: hidden;
             line-height: 1.7;
             font-size: 1.05rem;
             color: #2D3748;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        .insights-viewer h1, .insights-viewer h2, .insights-viewer h3 {
+        .insights-viewer h1,
+        .insights-viewer h2,
+        .insights-viewer h3 {
             color: var(--rappi-red);
             margin-top: 32px;
             margin-bottom: 16px;
@@ -458,7 +600,8 @@
             font-size: 2.2rem;
         }
 
-        .insights-viewer ul, .insights-viewer ol {
+        .insights-viewer ul,
+        .insights-viewer ol {
             margin-bottom: 16px;
             padding-left: 24px;
         }
@@ -467,20 +610,113 @@
             margin-bottom: 16px;
         }
 
+        #insightsReport .message.assistant {
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            animation: none;
+        }
+
         .spinner {
             display: none;
             width: 18px;
             height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 1s linear infinite;
         }
-        
-        .generate-btn.loading .spinner { display: block; }
-        .generate-btn.loading .btn-icon { display: none; }
+
+        .generate-btn.loading .spinner {
+            display: block;
+        }
+
+        .generate-btn.loading .btn-icon {
+            display: none;
+        }
+
+        /* Chart section styles */
+        .insights-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .chart-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .chart-card canvas {
+            max-height: 300px;
+        }
+
+        .correlation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            display: block;
+            overflow-x: auto;
+        }
+
+        .correlation-table th,
+        .correlation-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .correlation-table th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .correlation-table tr:hover {
+            background: rgba(255, 73, 64, 0.03);
+        }
+
+        .r-value {
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .r-positive {
+            background: rgba(72, 187, 120, 0.15);
+            color: #276749;
+        }
+
+        .r-negative {
+            background: rgba(245, 101, 101, 0.15);
+            color: #9b2c2c;
+        }
+
+        @media (max-width: 1200px) {
+            .insights-charts {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Global Tabs -->
@@ -497,10 +733,14 @@
                     <div class="brand-icon">
                         <img src="/static/logo.jpg" alt="Rappi Intel Logo">
                     </div>
-                    Rappi Intel
+                    RappiOps Chat
                 </div>
                 <button class="new-chat-btn" onclick="createNewSession()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                     New
                 </button>
             </div>
@@ -513,7 +753,7 @@
             <div class="messages-container" id="messagesContainer">
                 <div class="empty-state" id="emptyState">
                     <img src="/static/logo.jpg" alt="Rappi Intel Logo">
-                    <h2>Welcome to Rappi Intel Chat</h2>
+                    <h2>Welcome to RappiOps Chat</h2>
                     <p>Select a chat or start a new query about operations and analytics.</p>
                 </div>
                 <div class="typing-indicator" id="typingIndicator">
@@ -525,9 +765,14 @@
 
             <div class="input-area">
                 <div class="input-container">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about competitors, locations, prices..." onkeypress="handleKeyPress(event)">
+                    <input type="text" class="chat-input" id="chatInput"
+                        placeholder="Ask about competitors, locations, prices..." onkeypress="handleKeyPress(event)">
                     <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -539,14 +784,20 @@
         <div class="insights-actions">
             <p>Intelligence Overview</p>
             <button class="generate-btn" id="generateBtn" onclick="generateInsights()">
-                <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
                 <div class="spinner"></div>
                 <span>Generate Insights</span>
             </button>
         </div>
         <div class="insights-viewer" id="insightsViewer">
-            <div class="empty-state" style="height:100%; justify-content:center;">
-                <p>Loading insights...</p>
+            <div id="insightsCharts" class="insights-charts"></div>
+            <div id="insightsReport">
+                <div class="empty-state" style="height:100%; justify-content:center;">
+                    <p>Loading insights...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -565,12 +816,12 @@
                 const sessions = await response.json();
                 const list = document.getElementById('sessionList');
                 list.innerHTML = '';
-                
+
                 sessions.forEach(session => {
                     const item = document.createElement('div');
                     item.className = 'session-item' + (session.session_id === currentSessionId ? ' active' : '');
-                    
-                    const date = new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+
+                    const date = new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
                     item.innerHTML = `
                         <div class="session-title">${session.title || 'Analysis Query'}</div>
@@ -587,12 +838,12 @@
         async function selectSession(sessionId) {
             currentSessionId = sessionId;
             loadSessions(); // Update UI active state
-            
+
             document.getElementById('emptyState').style.display = 'none';
             const messagesContainer = document.getElementById('messagesContainer');
             // Remove existing messages except typing indicator
             Array.from(messagesContainer.children).forEach(child => {
-                if(child.id !== 'typingIndicator' && child.id !== 'emptyState') {
+                if (child.id !== 'typingIndicator' && child.id !== 'emptyState') {
                     child.remove();
                 }
             });
@@ -600,8 +851,8 @@
             try {
                 const response = await fetch(`/api/chat/history?session_id=${sessionId}`);
                 const data = await response.json();
-                
-                if(data.messages) {
+
+                if (data.messages) {
                     data.messages.forEach(msg => {
                         appendMessage(msg.content, msg.role);
                     });
@@ -617,7 +868,7 @@
             document.getElementById('emptyState').style.display = 'flex';
             const messagesContainer = document.getElementById('messagesContainer');
             Array.from(messagesContainer.children).forEach(child => {
-                if(child.id !== 'typingIndicator' && child.id !== 'emptyState') {
+                if (child.id !== 'typingIndicator' && child.id !== 'emptyState') {
                     child.remove();
                 }
             });
@@ -683,16 +934,18 @@
             const container = document.getElementById('messagesContainer');
             const msgEl = document.createElement('div');
             msgEl.className = 'message ' + role;
-            
-            let formattedContent = content
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                
-            msgEl.innerHTML = formattedContent;
-            
+
+            if (role === 'assistant') {
+                msgEl.innerHTML = parseMarkdown(content);
+            } else {
+                msgEl.style.whiteSpace = 'pre-wrap';
+                msgEl.textContent = content;
+            }
+
             const typingInd = document.getElementById('typingIndicator');
             container.insertBefore(msgEl, typingInd);
         }
+
 
         function scrollToBottom() {
             const container = document.getElementById('messagesContainer');
@@ -704,7 +957,7 @@
             document.querySelectorAll('.browser-tab').forEach(btn => btn.classList.remove('active'));
             // Update Container Active States
             document.querySelectorAll('.app-container').forEach(panel => panel.classList.remove('active'));
-            
+
             if (tabId === 'chat') {
                 document.querySelectorAll('.browser-tab')[0].classList.add('active');
                 document.getElementById('chatView').classList.add('active');
@@ -715,33 +968,251 @@
             }
         }
 
+        let activeCharts = [];
+
+        function parseMarkdown(text) {
+            // Process line by line
+            const lines = text.split('\n');
+            let html = '';
+            let inList = false;
+
+            for (let line of lines) {
+                // Headings
+                const h3 = line.match(/^###\s+(.+)/);
+                const h2 = line.match(/^##\s+(.+)/);
+                const h1 = line.match(/^#\s+(.+)/);
+
+                if (h3) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<h3 style="font-size:1.1rem;font-weight:700;color:#2D3748;margin:20px 0 8px;">' + inline(h3[1]) + '</h3>';
+                } else if (h2) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<h2 style="font-size:1.25rem;font-weight:700;color:#2D3748;margin:24px 0 10px;">' + inline(h2[1]) + '</h2>';
+                } else if (h1) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<h1 style="font-size:1.5rem;font-weight:700;color:#2D3748;margin:28px 0 12px;">' + inline(h1[1]) + '</h1>';
+                }
+                // Numbered list
+                else if (/^\d+\.\s+/.test(line)) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    const content = line.replace(/^\d+\.\s+/, '');
+                    html += '<div style="padding:2px 0 2px 16px;">' + inline(content) + '</div>';
+                }
+                // Bullet list
+                else if (/^[-*]\s+/.test(line)) {
+                    if (!inList) { html += '<ul style="margin:4px 0;padding-left:20px;">'; inList = true; }
+                    const content = line.replace(/^[-*]\s+/, '');
+                    html += '<li style="margin:2px 0;">' + inline(content) + '</li>';
+                }
+                // Horizontal rule
+                else if (/^---+$/.test(line.trim())) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;">';
+                }
+                // Empty line
+                else if (line.trim() === '') {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<div style="height:8px;"></div>';
+                }
+                // Regular text
+                else {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<p style="margin:4px 0;">' + inline(line) + '</p>';
+                }
+            }
+            if (inList) html += '</ul>';
+            return html;
+        }
+
+        function inline(text) {
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:0.9em;">$1</code>');
+        }
+
+
+        function destroyCharts() {
+            activeCharts.forEach(c => c.destroy());
+            activeCharts = [];
+        }
+
+        function renderInsightsData(data) {
+            // Render report as an assistant message bubble
+            const reportEl = document.getElementById('insightsReport');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'message assistant';
+            msgEl.innerHTML = parseMarkdown(data.report_md);
+            reportEl.innerHTML = '';
+            reportEl.appendChild(msgEl);
+
+            // Render charts
+            destroyCharts();
+            const chartsEl = document.getElementById('insightsCharts');
+            chartsEl.innerHTML = '';
+
+            if (data.chart_data) {
+                const cd = data.chart_data;
+                if (cd.anomalies && cd.anomalies.length > 0) renderAnomalyChart(chartsEl, cd.anomalies.slice(0, 10));
+                if (cd.trends && cd.trends.length > 0) renderTrendChart(chartsEl, cd.trends.slice(0, 5));
+                if (cd.benchmarks && cd.benchmarks.length > 0) renderBenchmarkChart(chartsEl, cd.benchmarks.slice(0, 10));
+                if (cd.correlations && cd.correlations.length > 0) renderCorrelationTable(chartsEl, cd.correlations.slice(0, 10));
+            }
+        }
+
+        function renderAnomalyChart(container, anomalies) {
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.innerHTML = '<h3>Anomalias — Cambio Semanal (%)</h3><canvas></canvas>';
+            container.appendChild(card);
+
+            const labels = anomalies.map(a => `${a.zone} — ${a.metric}`.substring(0, 40));
+            const values = anomalies.map(a => (a.pct_change * 100));
+            const colors = anomalies.map(a => a.direction === 'deterioration' ? 'rgba(245, 101, 101, 0.8)' : 'rgba(72, 187, 120, 0.8)');
+
+            const chart = new Chart(card.querySelector('canvas'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '% Cambio WoW',
+                        data: values,
+                        backgroundColor: colors,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { callback: v => v + '%' } }
+                    }
+                }
+            });
+            activeCharts.push(chart);
+        }
+
+        function renderTrendChart(container, trends) {
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.innerHTML = '<h3>Tendencias Negativas — Evolucion Semanal</h3><canvas></canvas>';
+            container.appendChild(card);
+
+            const weekLabels = ['L8W', 'L7W', 'L6W', 'L5W', 'L4W', 'L3W', 'L2W', 'L1W', 'L0W'];
+            const palette = ['#FF4940', '#FF6B54', '#E53E3E', '#C53030', '#9B2C2C'];
+            const datasets = trends.map((t, i) => ({
+                label: `${t.zone} — ${t.metric}`.substring(0, 35),
+                data: t.weekly_values,
+                borderColor: palette[i % palette.length],
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointRadius: 3,
+            }));
+
+            const chart = new Chart(card.querySelector('canvas'), {
+                type: 'line',
+                data: { labels: weekLabels, datasets },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+            activeCharts.push(chart);
+        }
+
+        function renderBenchmarkChart(container, benchmarks) {
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.innerHTML = '<h3>Benchmark — Zona vs Media del Grupo</h3><canvas></canvas>';
+            container.appendChild(card);
+
+            const labels = benchmarks.map(b => `${b.zone}`.substring(0, 25));
+            const zoneValues = benchmarks.map(b => b.value);
+            const peerMeans = benchmarks.map(b => b.peer_mean);
+
+            const chart = new Chart(card.querySelector('canvas'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Zona',
+                            data: zoneValues,
+                            backgroundColor: 'rgba(245, 101, 101, 0.7)',
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Media Grupo',
+                            data: peerMeans,
+                            backgroundColor: 'rgba(160, 174, 192, 0.6)',
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { maxRotation: 45, font: { size: 10 } } }
+                    }
+                }
+            });
+            activeCharts.push(chart);
+        }
+
+        function renderCorrelationTable(container, correlations) {
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            card.style.gridColumn = '1 / -1';
+
+            let html = '<h3>Correlaciones Fuertes entre Metricas</h3>';
+            html += '<table class="correlation-table"><thead><tr><th>Zona</th><th>Pais</th><th>Metrica A</th><th>Metrica B</th><th>Correlacion (r)</th></tr></thead><tbody>';
+            correlations.forEach(c => {
+                const cls = c.correlation > 0 ? 'r-positive' : 'r-negative';
+                html += `<tr>
+                    <td>${c.zone}</td>
+                    <td>${c.country}</td>
+                    <td>${c.metric_a}</td>
+                    <td>${c.metric_b}</td>
+                    <td><span class="r-value ${cls}">${c.correlation.toFixed(3)}</span></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            card.innerHTML = html;
+            container.appendChild(card);
+        }
+
         async function loadInsights() {
             try {
                 const response = await fetch('/api/chat/insights');
                 const data = await response.json();
-                document.getElementById('insightsViewer').innerHTML = window.marked ? marked.parse(data.content) : data.content;
+                renderInsightsData(data);
             } catch (err) {
                 console.error("Error loading insights", err);
-                document.getElementById('insightsViewer').innerHTML = "<p style='color:red;'>Error loading complete insights.</p>";
+                document.getElementById('insightsReport').innerHTML = "<p style='color:red;'>Error loading insights.</p>";
             }
         }
 
         async function generateInsights() {
             const btn = document.getElementById('generateBtn');
-            const viewer = document.getElementById('insightsViewer');
-            
+
             btn.disabled = true;
             btn.classList.add('loading');
             btn.querySelector('span').innerText = 'Generating...';
-            viewer.innerHTML = '<div class="empty-state" style="height:100%; justify-content:center;"><h2>Processing Intelligence Data</h2><p>This may take up to a minute...</p></div>';
+            document.getElementById('insightsCharts').innerHTML = '';
+            document.getElementById('insightsReport').innerHTML = '<div class="empty-state" style="height:100%; justify-content:center;"><h2>Processing Intelligence Data</h2><p>This may take up to a minute...</p></div>';
 
             try {
                 const response = await fetch('/api/chat/insights/generate', { method: 'POST' });
                 const data = await response.json();
-                viewer.innerHTML = window.marked ? marked.parse(data.content) : data.content;
+                renderInsightsData(data);
             } catch (err) {
                 console.error("Error generating insights", err);
-                viewer.innerHTML = "<p style='color:red;'>Error generating operational insights. Please try again.</p>";
+                document.getElementById('insightsReport').innerHTML = "<p style='color:red;'>Error generating operational insights. Please try again.</p>";
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('loading');
@@ -750,4 +1221,5 @@
         }
     </script>
 </body>
+
 </html>

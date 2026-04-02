@@ -9,7 +9,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from src.config import settings  # noqa: F401 — loads .env into os.environ
 from src.agent.graph import ChatGraph
 from src.api.chat import router as chat_router
-from src.api.dependencies import init_chat_graph, init_session_store
+from src.api.dependencies import init_chat_graph, init_dataframes, init_session_store
 from src.data.loader import load_dataframes
 from src.services.session_store import SessionStore
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     df_metrics, df_orders = load_dataframes()
+    init_dataframes(df_metrics, df_orders)
 
     async with AsyncSqliteSaver.from_conn_string("data/sessions.db") as checkpointer:
         chat_graph = ChatGraph(df_metrics, df_orders, checkpointer=checkpointer)
@@ -54,9 +55,11 @@ from fastapi.responses import FileResponse
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 @app.get("/")
 async def serve_index():
     return FileResponse("static/index.html")
+
 
 @app.get("/health")
 async def health():
