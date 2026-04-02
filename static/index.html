@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rappi Intel Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* CSS resets and variables */
+        :root {
+            --rappi-red: #FF4940;
+            --rappi-red-glow: rgba(255, 73, 64, 0.4);
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-main: #2D3748;
+            --text-muted: #718096;
+            --font-main: 'Outfit', sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 2vh;
+        }
+
+        /* Global Browser-like Tabs */
+        .browser-tabs {
+            display: flex;
+            width: 95vw;
+            padding: 0 24px;
+            gap: 8px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .browser-tab {
+            padding: 14px 28px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            border-radius: 16px 16px 0 0;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            position: relative;
+            transform: translateY(1px); /* Overlaps container border slightly */
+        }
+
+        .browser-tab:hover {
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text-main);
+        }
+
+        .browser-tab.active {
+            background: var(--glass-bg);
+            color: var(--rappi-red);
+            padding-top: 16px; /* Pops out slightly */
+            margin-top: -2px;
+            border-bottom: 2px solid var(--glass-bg); /* Cover the border below */
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.02);
+            z-index: 11;
+        }
+
+        /* Glass Container View */
+        .app-container {
+            width: 95vw;
+            height: 90vh; /* Remaining height */
+            display: none; /* Hidden by default for logic */
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border-top-left-radius: 4px; /* Hard corner near first tab */
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .app-container.active {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.4);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px var(--rappi-red-glow);
+            overflow: hidden;
+            display: flex;
+        }
+        .brand-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .new-chat-btn {
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--rappi-red);
+            color: white;
+            box-shadow: 0 4px 12px var(--rappi-red-glow);
+            transform: translateY(-1px);
+        }
+
+        .session-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .session-item {
+            padding: 14px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: transparent;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .session-item:hover {
+            background: rgba(255,255,255,0.7);
+            border-color: rgba(255,255,255,0.9);
+            transform: translateY(-1px);
+        }
+
+        .session-item.active {
+            background: white;
+            border-color: rgba(255, 73, 64, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border-left: 3px solid var(--rappi-red);
+        }
+
+        .session-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: messageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+        }
+
+        @keyframes messageFadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--rappi-red), #FF6B54);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 8px 20px rgba(255, 73, 64, 0.25);
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: white;
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        .input-area {
+            padding: 24px 32px;
+            background: rgba(255, 255, 255, 0.4);
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0,0,0,0.05);
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .input-container:focus-within {
+            box-shadow: 0 8px 24px rgba(255, 73, 64, 0.15);
+            border-color: rgba(255, 73, 64, 0.3);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 12px;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            color: var(--text-main);
+            background: transparent;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--rappi-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px var(--rappi-red-glow);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #cbd5e0;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 20px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            opacity: 0.8;
+            animation: messageFadeIn 0.5s ease;
+        }
+        .empty-state img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        /* Insights Panel Styles */
+        #insightsView {
+            flex-direction: column;
+            background: rgba(255,255,255,0.75); 
+        }
+
+        .insights-actions {
+            padding: 16px 32px;
+            display: flex;
+            justify-content: flex-end;
+            background: rgba(255,255,255,0.4);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            align-items: center;
+        }
+
+        .insights-actions p {
+            margin: 0;
+            margin-right: auto;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .generate-btn {
+            padding: 12px 24px;
+            background: var(--rappi-red);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px var(--rappi-red-glow);
+            transition: all 0.2s ease;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px var(--rappi-red-glow);
+        }
+
+        .generate-btn:disabled {
+            background: #cbd5e0;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .insights-viewer {
+            flex: 1;
+            padding: 32px 10%;
+            overflow-y: auto;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            color: #2D3748;
+        }
+
+        .insights-viewer h1, .insights-viewer h2, .insights-viewer h3 {
+            color: var(--rappi-red);
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
+        .insights-viewer h1 {
+            font-size: 2.2rem;
+        }
+
+        .insights-viewer ul, .insights-viewer ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .insights-viewer p {
+            margin-bottom: 16px;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        
+        .generate-btn.loading .spinner { display: block; }
+        .generate-btn.loading .btn-icon { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Global Tabs -->
+    <div class="browser-tabs">
+        <button class="browser-tab active" onclick="switchGlobalTab('chat')">Chat Agent</button>
+        <button class="browser-tab" onclick="switchGlobalTab('insights')">Insights Report</button>
+    </div>
+
+    <!-- Chat View Container -->
+    <div class="app-container active" id="chatView">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <img src="/static/logo.jpg" alt="Rappi Intel Logo">
+                    </div>
+                    Rappi Intel
+                </div>
+                <button class="new-chat-btn" onclick="createNewSession()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    New
+                </button>
+            </div>
+            <div class="session-list" id="sessionList">
+                <!-- Sessions populated here -->
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state" id="emptyState">
+                    <img src="/static/logo.jpg" alt="Rappi Intel Logo">
+                    <h2>Welcome to Rappi Intel Chat</h2>
+                    <p>Select a chat or start a new query about operations and analytics.</p>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about competitors, locations, prices..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights View Container -->
+    <div class="app-container" id="insightsView">
+        <div class="insights-actions">
+            <p>Intelligence Overview</p>
+            <button class="generate-btn" id="generateBtn" onclick="generateInsights()">
+                <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <div class="spinner"></div>
+                <span>Generate Insights</span>
+            </button>
+        </div>
+        <div class="insights-viewer" id="insightsViewer">
+            <div class="empty-state" style="height:100%; justify-content:center;">
+                <p>Loading insights...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let isWaitingForResponse = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSessions();
+        });
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/chat/sessions');
+                const sessions = await response.json();
+                const list = document.getElementById('sessionList');
+                list.innerHTML = '';
+                
+                sessions.forEach(session => {
+                    const item = document.createElement('div');
+                    item.className = 'session-item' + (session.session_id === currentSessionId ? ' active' : '');
+                    
+                    const date = new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+
+                    item.innerHTML = `
+                        <div class="session-title">${session.title || 'Analysis Query'}</div>
+                        <div class="session-date">${date}</div>
+                    `;
+                    item.onclick = () => selectSession(session.session_id);
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error loading sessions", err);
+            }
+        }
+
+        async function selectSession(sessionId) {
+            currentSessionId = sessionId;
+            loadSessions(); // Update UI active state
+            
+            document.getElementById('emptyState').style.display = 'none';
+            const messagesContainer = document.getElementById('messagesContainer');
+            // Remove existing messages except typing indicator
+            Array.from(messagesContainer.children).forEach(child => {
+                if(child.id !== 'typingIndicator' && child.id !== 'emptyState') {
+                    child.remove();
+                }
+            });
+
+            try {
+                const response = await fetch(`/api/chat/history?session_id=${sessionId}`);
+                const data = await response.json();
+                
+                if(data.messages) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg.content, msg.role);
+                    });
+                }
+                scrollToBottom();
+            } catch (err) {
+                console.error("Error loading chat history", err);
+            }
+        }
+
+        function createNewSession() {
+            currentSessionId = null;
+            document.getElementById('emptyState').style.display = 'flex';
+            const messagesContainer = document.getElementById('messagesContainer');
+            Array.from(messagesContainer.children).forEach(child => {
+                if(child.id !== 'typingIndicator' && child.id !== 'emptyState') {
+                    child.remove();
+                }
+            });
+            loadSessions(); // clear active class
+            document.getElementById('chatInput').focus();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !isWaitingForResponse) {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            if (isWaitingForResponse) return;
+
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            document.getElementById('emptyState').style.display = 'none';
+            appendMessage(text, 'user');
+            scrollToBottom();
+
+            isWaitingForResponse = true;
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('typingIndicator').classList.add('visible');
+            scrollToBottom();
+
+            try {
+                const payload = { message: text };
+                if (currentSessionId) {
+                    payload.session_id = currentSessionId;
+                }
+
+                const response = await fetch('/api/chat/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                currentSessionId = data.session_id;
+
+                document.getElementById('typingIndicator').classList.remove('visible');
+                appendMessage(data.answer, 'assistant');
+                scrollToBottom();
+                loadSessions();
+            } catch (err) {
+                console.error("Error sending message", err);
+                document.getElementById('typingIndicator').classList.remove('visible');
+                appendMessage("Sorry, an error occurred while processing your request.", 'assistant');
+                scrollToBottom();
+            } finally {
+                isWaitingForResponse = false;
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+
+        function appendMessage(content, role) {
+            const container = document.getElementById('messagesContainer');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'message ' + role;
+            
+            let formattedContent = content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+            msgEl.innerHTML = formattedContent;
+            
+            const typingInd = document.getElementById('typingIndicator');
+            container.insertBefore(msgEl, typingInd);
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function switchGlobalTab(tabId) {
+            // Update Tab Active States
+            document.querySelectorAll('.browser-tab').forEach(btn => btn.classList.remove('active'));
+            // Update Container Active States
+            document.querySelectorAll('.app-container').forEach(panel => panel.classList.remove('active'));
+            
+            if (tabId === 'chat') {
+                document.querySelectorAll('.browser-tab')[0].classList.add('active');
+                document.getElementById('chatView').classList.add('active');
+            } else {
+                document.querySelectorAll('.browser-tab')[1].classList.add('active');
+                document.getElementById('insightsView').classList.add('active');
+                loadInsights();
+            }
+        }
+
+        async function loadInsights() {
+            try {
+                const response = await fetch('/api/chat/insights');
+                const data = await response.json();
+                document.getElementById('insightsViewer').innerHTML = window.marked ? marked.parse(data.content) : data.content;
+            } catch (err) {
+                console.error("Error loading insights", err);
+                document.getElementById('insightsViewer').innerHTML = "<p style='color:red;'>Error loading complete insights.</p>";
+            }
+        }
+
+        async function generateInsights() {
+            const btn = document.getElementById('generateBtn');
+            const viewer = document.getElementById('insightsViewer');
+            
+            btn.disabled = true;
+            btn.classList.add('loading');
+            btn.querySelector('span').innerText = 'Generating...';
+            viewer.innerHTML = '<div class="empty-state" style="height:100%; justify-content:center;"><h2>Processing Intelligence Data</h2><p>This may take up to a minute...</p></div>';
+
+            try {
+                const response = await fetch('/api/chat/insights/generate', { method: 'POST' });
+                const data = await response.json();
+                viewer.innerHTML = window.marked ? marked.parse(data.content) : data.content;
+            } catch (err) {
+                console.error("Error generating insights", err);
+                viewer.innerHTML = "<p style='color:red;'>Error generating operational insights. Please try again.</p>";
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btn.querySelector('span').innerText = 'Generate Insights';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import logging
 import uuid
+import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.messages import HumanMessage
@@ -105,3 +106,46 @@ async def list_sessions(
     """Lista todas las sesiones de chat ordenadas por actividad reciente."""
     sessions = await session_store.list_sessions()
     return [SessionOut(**s) for s in sessions]
+
+
+class InsightsResponse(BaseModel):
+    content: str
+
+
+@router.get("/insights", response_model=InsightsResponse)
+def get_insights():
+    """Retorna el contenido del archivo de insights si existe."""
+    filepath = "data/insights.md"
+    if not os.path.exists(filepath):
+        return InsightsResponse(content="# Insights\n\nNo hay insights generados. Haz clic en 'Generar Insights'.")
+    
+    with open(filepath, mode="r", encoding="utf-8") as f:
+        content = f.read()
+        return InsightsResponse(content=content)
+
+
+@router.post("/insights/generate", response_model=InsightsResponse)
+async def generate_insights(
+    chat_graph: ChatGraph = Depends(get_chat_graph),
+    session_store: SessionStore = Depends(get_session_store),
+):
+    """Genera nuevos insights usando el agente y los guarda en insights.md"""
+    session_id = "insights_generation_session"
+    prompt = "Genera un reporte DETALLADO de insights operativos, estrategias de precios y recomendaciones para Rappi basado en los datos actuales. Formatea el resultado en Markdown profesional con títulos, listas, y texto en negrita. Analiza profundamente el performance y da recomendaciones accionables."
+    
+    await session_store.get_or_create(session_id, "Generación de Insights")
+    
+    result = await chat_graph.graph.ainvoke(
+        {"messages": [HumanMessage(content=prompt)]},
+        config={"configurable": {"thread_id": session_id}},
+    )
+    
+    final_message = result["messages"][-1].content
+    
+    filepath = "data/insights.md"
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, mode="w", encoding="utf-8") as f:
+        f.write(final_message)
+        
+    return InsightsResponse(content=final_message)
+
